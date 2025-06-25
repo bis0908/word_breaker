@@ -1,3 +1,8 @@
+"""
+현재 미사용, text_counter.py로 이관됨
+호환성을 위해 유지하되 새로운 기능은 text_counter를 사용
+"""
+
 import re
 
 

@@ -1,5 +1,6 @@
 from typing import List
-from utils.korean_counter import count_korean
+from utils.text_counter import count_korean, count_all_chars
+import re
 
 
 # 기본 줄 길이 설정
@@ -122,7 +123,7 @@ class TextProcessor:
 
     def count_korean_chars(self, text: str) -> int:
         """
-        텍스트의 한글 문자 수를 카운트합니다.
+        텍스트의 한글 문자 수를 카운트합니다. (호환성 유지)
 
         Args:
             text (str): 카운트할 텍스트
@@ -131,3 +132,181 @@ class TextProcessor:
             int: 한글 문자 수
         """
         return count_korean(text)
+
+    def count_all_chars(self, text: str) -> int:
+        """
+        텍스트의 모든 문자 수를 카운트합니다. (공백 제외)
+
+        Args:
+            text (str): 카운트할 텍스트
+
+        Returns:
+            int: 모든 문자 수 (공백 제외)
+        """
+        return count_all_chars(text)
+
+    def format_text_with_options(
+        self,
+        text: str,
+        line_length: int,
+        use_all_chars: bool = True,
+        separate_sentences: bool = True,
+    ) -> str:
+        """
+        옵션을 고려한 텍스트 가다듬기
+
+        Args:
+            text (str): 가다듬을 텍스트
+            line_length (int): 한 줄당 문자 수
+            use_all_chars (bool): 모든 문자 카운팅 여부 (True: 모든 문자, False: 한글만)
+            separate_sentences (bool): 마침표 분리 여부
+
+        Returns:
+            str: 가다듬어진 텍스트
+        """
+        if not text.strip():
+            return ""
+
+        # 마침표 분리 처리
+        if separate_sentences:
+            text = self.separate_sentences_by_period(text)
+
+        # 문자 카운팅 방식에 따른 분할
+        if use_all_chars:
+            lines = self.split_by_all_chars(text, line_length)
+        else:
+            lines = self.split_by_korean_count(text, line_length)
+
+        return "\n".join(lines)
+
+    def split_by_all_chars(self, text: str, length: int) -> List[str]:
+        """
+        텍스트를 모든 문자 수 기준으로 분할합니다.
+
+        Args:
+            text (str): 분할할 텍스트
+            length (int): 한 줄당 최대 문자 수 (공백 제외)
+
+        Returns:
+            List[str]: 분할된 문자열 리스트
+        """
+        if not text.strip():
+            return []
+
+        # 빈 행(\n\n)을 보존하기 위해 먼저 빈 행으로 분할
+        paragraphs = text.split("\n\n")
+        result = []
+
+        for i, paragraph in enumerate(paragraphs):
+            if not paragraph.strip():
+                # 빈 문단은 빈 행으로 추가
+                result.append("")
+                continue
+
+            # 각 문단을 단어로 분할하여 처리
+            words = paragraph.split()
+            if not words:
+                result.append("")
+                continue
+
+            lines = []
+            current_line = ""
+            current_char_count = 0
+
+            for word in words:
+                word_char_count = count_all_chars(word)
+
+                # 현재 줄에 단어를 추가했을 때의 문자 수 계산
+                if current_line:
+                    # 공백 1개 추가하지만 공백은 카운트하지 않음
+                    total_char_count = current_char_count + word_char_count
+                else:
+                    # 첫 번째 단어
+                    total_char_count = word_char_count
+
+                # 길이 제한 확인
+                if total_char_count <= length:
+                    # 현재 줄에 추가
+                    if current_line:
+                        current_line += " " + word
+                    else:
+                        current_line = word
+                    current_char_count = total_char_count
+                else:
+                    # 새로운 줄 시작
+                    if current_line:
+                        lines.append(current_line)
+
+                    # 단어 자체가 길이 제한을 초과하는 경우
+                    if word_char_count > length:
+                        # 단어를 강제로 분할
+                        split_word = self._split_long_word_by_all_chars(word, length)
+                        lines.extend(split_word[:-1])  # 마지막 부분 제외하고 추가
+                        current_line = split_word[-1]  # 마지막 부분을 현재 줄로
+                        current_char_count = count_all_chars(current_line)
+                    else:
+                        current_line = word
+                        current_char_count = word_char_count
+
+            # 마지막 줄 추가
+            if current_line:
+                lines.append(current_line)
+
+            # 처리된 문단을 결과에 추가
+            result.extend(lines)
+
+            # 마지막 문단이 아니라면 빈 행 추가 (원래 \n\n을 보존)
+            if i < len(paragraphs) - 1:
+                result.append("")
+
+        return result
+
+    def _split_long_word_by_all_chars(self, word: str, max_length: int) -> List[str]:
+        """긴 단어를 모든 문자 기준으로 강제 분할합니다."""
+        if not word:
+            return []
+
+        result = []
+        current_part = ""
+        current_char_count = 0
+
+        for char in word:
+            char_count = 0 if char == " " else 1  # 공백은 카운트하지 않음
+
+            if current_char_count + char_count <= max_length:
+                current_part += char
+                current_char_count += char_count
+            else:
+                if current_part:
+                    result.append(current_part)
+                current_part = char
+                current_char_count = char_count
+
+        if current_part:
+            result.append(current_part)
+
+        return result if result else [word]
+
+    def separate_sentences_by_period(self, text: str) -> str:
+        """
+        마침표 기준 문장 분리 (마침표 뒤에 빈 행 추가)
+
+        Args:
+            text (str): 분리할 텍스트
+
+        Returns:
+            str: 마침표로 분리된 텍스트
+        """
+        if not text.strip():
+            return ""
+
+        # 마침표 뒤에 공백이나 줄바꿈이 있는 경우 빈 행 추가
+        # 마침표 뒤에 이미 줄바꿈이 있는 경우는 추가 처리하지 않음
+        pattern = r"(\.)(\s+)"
+        result = re.sub(pattern, r"\1\n\n", text)
+
+        # 마침표 뒤에 바로 문자가 오는 경우도 처리
+        pattern2 = r"(\.)([^\s\n])"
+        result = re.sub(pattern2, r"\1\n\n\2", result)
+
+        return result

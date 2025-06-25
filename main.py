@@ -7,6 +7,8 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QHBoxLayout,
     QLabel,
+    QCheckBox,
+    QPushButton,
 )
 from PySide6.QtCore import Qt
 
@@ -26,6 +28,10 @@ class TextBreakerApp(QDialog):
         # 줄 길이 설정 (기본값: 18)
         self.line_length = DEFAULT_LINE_LENGTH
 
+        # 새로운 옵션들
+        self.use_all_chars = True  # 모든 문자 카운팅 사용
+        self.separate_sentences = True  # 마침표 분리 사용
+
         # 모듈 인스턴스
         self.text_processor = TextProcessor()
         self.clipboard_helper = ClipboardHelper()
@@ -39,8 +45,18 @@ class TextBreakerApp(QDialog):
         # 윈도우 제목 설정
         self.setWindowTitle("텍스트 문단 가다듬기 프로그램")
 
+        # 최소화 버튼 설정
+        self.setWindowFlags(self.windowFlags() | Qt.WindowMinimizeButtonHint)
+
+        # text_area 폭 조정 (오른쪽 UI 컨트롤과의 여백 확보)
+        self.ui.plainTextEdit.setGeometry(10, 10, 400, 500)
+        self.ui.label.setGeometry(10, 525, 500, 31)
+
         # 줄 길이 설정 그룹 추가
         self._setup_line_length_controls()
+
+        # 추가 UI 컨트롤들 설정
+        self._setup_additional_controls()
 
         # 초기 상태 메시지 설정
         self.ui.label.setText("작업 대기 중...")
@@ -50,8 +66,27 @@ class TextBreakerApp(QDialog):
         self.ui.buttonBox.button(self.ui.buttonBox.StandardButton.Save).setText("복사")
         self.ui.buttonBox.button(self.ui.buttonBox.StandardButton.Close).setText("닫기")
 
-        # Cancel 버튼 숨기기
-        self.ui.buttonBox.button(self.ui.buttonBox.StandardButton.Cancel).hide()
+        # Cancel 버튼이 있는 경우에만 숨기기
+        cancel_button = self.ui.buttonBox.button(
+            self.ui.buttonBox.StandardButton.Cancel
+        )
+        if cancel_button:
+            cancel_button.hide()
+
+    def _setup_additional_controls(self):
+        """추가 UI 컨트롤들 설정"""
+        # 마침표 분리 체크박스
+        self.sentence_separation_checkbox = QCheckBox("마침표 분리", self)
+        self.sentence_separation_checkbox.setGeometry(520, 140, 90, 20)
+        self.sentence_separation_checkbox.setChecked(True)
+        self.sentence_separation_checkbox.stateChanged.connect(
+            self.on_sentence_separation_changed
+        )
+
+        # 초기화 버튼
+        self.clear_button = QPushButton("내용 초기화", self)
+        self.clear_button.setGeometry(530, 100, 81, 25)
+        self.clear_button.clicked.connect(self.clear_text_area)
 
     def _setup_line_length_controls(self):
         """줄 길이 설정 컨트롤 생성"""
@@ -82,7 +117,7 @@ class TextBreakerApp(QDialog):
         self.line_length_group.setLayout(layout)
 
         # 기존 레이아웃에 추가 (버튼 위에)
-        self.line_length_group.setGeometry(441, 260, 170, 80)
+        self.line_length_group.setGeometry(441, 200, 170, 80)
         self.line_length_group.setParent(self)
 
     def _connect_events(self):
@@ -105,6 +140,15 @@ class TextBreakerApp(QDialog):
         # 줄 길이 변경 이벤트
         self.line_length_spinbox.valueChanged.connect(self.on_line_length_changed)
 
+    def on_sentence_separation_changed(self, state):
+        """마침표 분리 체크박스 이벤트"""
+        self.separate_sentences = state == Qt.CheckState.Checked.value
+
+    def clear_text_area(self):
+        """텍스트 영역 초기화"""
+        self.ui.plainTextEdit.clear()
+        self.update_status("텍스트 영역이 초기화되었습니다.", True)
+
     def apply_formatting(self):
         """텍스트 가다듬기 적용"""
         try:
@@ -115,18 +159,23 @@ class TextBreakerApp(QDialog):
                 self.update_status("입력 텍스트가 비어있습니다.", False)
                 return
 
-            # 텍스트 처리 실행
-            result = self.text_processor.format_text(input_text, self.line_length)
+            # 새로운 옵션들을 반영한 텍스트 처리
+            result = self.text_processor.format_text_with_options(
+                input_text,
+                self.line_length,
+                use_all_chars=self.use_all_chars,
+                separate_sentences=self.separate_sentences,
+            )
 
             # 결과를 입력 영역에 표시
             self.ui.plainTextEdit.setPlainText(result)
 
-            # 한글 문자 수 계산
-            korean_count = self.text_processor.count_korean_chars(result)
+            # 모든 문자 카운팅으로 변경
+            char_count = self.text_processor.count_all_chars(result)
 
             # 성공 메시지 표시
             self.update_status(
-                f"작업 성공! 전체 텍스트 갯수(공백 제외): {korean_count}자 (줄 길이: {self.line_length}자)",
+                f"작업 성공! 전체 텍스트 갯수(공백 제외): {char_count}자 (줄 길이: {self.line_length}자)",
                 True,
             )
 
