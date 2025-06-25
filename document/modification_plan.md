@@ -338,7 +338,7 @@ def test_count_all_chars_method(self):
    - 기존 레이아웃과의 조화 검증
    - 반응형 동작 테스트
 
-### Phase 3: 이벤트 처리 구현 및 테스트
+### ~~Phase 3: 이벤트 처리 구현 및 테스트~~ 불필요한 기능으로 제외
 
 1. **main.py 확장**
    - 새로운 속성 추가 (`use_all_chars`, `separate_sentences`)

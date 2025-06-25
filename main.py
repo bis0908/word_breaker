@@ -159,7 +159,7 @@ class TextBreakerApp(QDialog):
                 self.update_status("입력 텍스트가 비어있습니다.", False)
                 return
 
-            # 새로운 옵션들을 반영한 텍스트 처리
+            # 모든 문자 카운팅 방식으로 텍스트 처리 (마침표 분리 옵션만 다름)
             result = self.text_processor.format_text_with_options(
                 input_text,
                 self.line_length,
@@ -167,17 +167,23 @@ class TextBreakerApp(QDialog):
                 separate_sentences=self.separate_sentences,
             )
 
-            # 결과를 입력 영역에 표시
-            self.ui.plainTextEdit.setPlainText(result)
-
-            # 모든 문자 카운팅으로 변경
+            # 모든 문자 카운팅
             char_count = self.text_processor.count_all_chars(result)
 
-            # 성공 메시지 표시
-            self.update_status(
-                f"작업 성공! 전체 텍스트 갯수(공백 제외): {char_count}자 (줄 길이: {self.line_length}자)",
-                True,
-            )
+            # 마침표 분리 상태에 따른 성공 메시지 표시
+            if self.separate_sentences:
+                self.update_status(
+                    f"작업 성공! 전체 텍스트 갯수(공백 제외): {char_count}자 (줄 길이: {self.line_length}자, 마침표 분리 적용)",
+                    True,
+                )
+            else:
+                self.update_status(
+                    f"작업 성공! 전체 텍스트 갯수(공백 제외): {char_count}자 (줄 길이: {self.line_length}자, 마침표 분리 없음)",
+                    True,
+                )
+
+            # 결과를 입력 영역에 표시
+            self.ui.plainTextEdit.setPlainText(result)
 
         except Exception as e:
             self.update_status(f"작업 실패: {str(e)}", False)

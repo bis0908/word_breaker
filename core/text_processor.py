@@ -173,11 +173,81 @@ class TextProcessor:
 
         # 문자 카운팅 방식에 따른 분할
         if use_all_chars:
-            lines = self.split_by_all_chars(text, line_length)
+            if separate_sentences:
+                # 마침표 분리가 활성화된 경우: 빈 행을 보존하는 방식
+                lines = self.split_by_all_chars(text, line_length)
+            else:
+                # 마침표 분리가 비활성화된 경우: 기존 방식과 동일한 개행 처리
+                lines = self.split_by_all_chars_simple(text, line_length)
         else:
             lines = self.split_by_korean_count(text, line_length)
 
         return "\n".join(lines)
+
+    def split_by_all_chars_simple(self, text: str, length: int) -> List[str]:
+        """
+        텍스트를 모든 문자 수 기준으로 분할합니다. (기존 방식과 동일한 개행 처리)
+        모든 개행문자를 무시하고 공백으로만 단어를 분리하여 줄 길이에 맞춰 재배열합니다.
+
+        Args:
+            text (str): 분할할 텍스트
+            length (int): 한 줄당 최대 문자 수 (공백 제외)
+
+        Returns:
+            List[str]: 분할된 문자열 리스트
+        """
+        if not text.strip():
+            return []
+
+        # 공백으로 단어 분리 (기존 방식과 동일)
+        words = text.split()
+        if not words:
+            return []
+
+        lines = []
+        current_line = ""
+        current_char_count = 0
+
+        for word in words:
+            word_char_count = count_all_chars(word)
+
+            # 현재 줄에 단어를 추가했을 때의 문자 수 계산
+            if current_line:
+                # 공백 1개 추가하지만 공백은 카운트하지 않음
+                total_char_count = current_char_count + word_char_count
+            else:
+                # 첫 번째 단어
+                total_char_count = word_char_count
+
+            # 길이 제한 확인
+            if total_char_count <= length:
+                # 현재 줄에 추가
+                if current_line:
+                    current_line += " " + word
+                else:
+                    current_line = word
+                current_char_count = total_char_count
+            else:
+                # 새로운 줄 시작
+                if current_line:
+                    lines.append(current_line)
+
+                # 단어 자체가 길이 제한을 초과하는 경우
+                if word_char_count > length:
+                    # 단어를 강제로 분할
+                    split_word = self._split_long_word_by_all_chars(word, length)
+                    lines.extend(split_word[:-1])  # 마지막 부분 제외하고 추가
+                    current_line = split_word[-1]  # 마지막 부분을 현재 줄로
+                    current_char_count = count_all_chars(current_line)
+                else:
+                    current_line = word
+                    current_char_count = word_char_count
+
+        # 마지막 줄 추가
+        if current_line:
+            lines.append(current_line)
+
+        return lines
 
     def split_by_all_chars(self, text: str, length: int) -> List[str]:
         """
