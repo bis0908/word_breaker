@@ -9,17 +9,70 @@ import re
 
 def count_all_chars(text: str) -> int:
     """
-    모든 문자 카운팅 (공백 제외)
+    모든 문자 카운팅 (공백, 쉼표, 마침표, 개행문자, 보이지 않는 문자 제외)
 
     Args:
         text (str): 카운트할 텍스트
 
     Returns:
-        int: 공백을 제외한 모든 문자 수
+        int: 공백, 쉼표, 마침표, 개행문자, 보이지 않는 문자를 제외한 모든 문자 수
     """
     if not text:
         return 0
-    return len([char for char in text if char != " "])
+
+    # 제외할 문자들 (기존 + 보이지 않는 문자들)
+    excluded_chars = {
+        " ",  # 공백
+        ",",  # 쉼표
+        ".",  # 마침표
+        "!",  # 느낌표
+        "\n",  # 개행문자
+        "\u200b",  # Zero Width Space
+        "\u200c",  # Zero Width Non-Joiner
+        "\u200d",  # Zero Width Joiner
+        "\u200e",  # Left-to-Right Mark
+        "\u200f",  # Right-to-Left Mark
+        "\ufeff",  # Zero Width No-Break Space (BOM)
+        "\u2060",  # Word Joiner
+        "\u00a0",  # Non-Breaking Space
+        "\u180e",  # Mongolian Vowel Separator
+        "\u3164",  # Hangul Filler
+    }
+
+    return len([char for char in text if char not in excluded_chars])
+
+
+def count_all_chars_with_period(text: str) -> int:
+    """
+    모든 문자 카운팅 (공백, 쉼표, 마침표, 개행문자, 보이지 않는 문자 제외)
+
+    Args:
+        text (str): 카운트할 텍스트
+
+    Returns:
+        int: 공백, 쉼표, 마침표, 개행문자, 보이지 않는 문자를 제외한 모든 문자 수
+    """
+    if not text:
+        return 0
+
+    # 제외할 문자들 (기존 + 보이지 않는 문자들)
+    excluded_chars = {
+        " ",  # 공백
+        "!",  # 느낌표
+        "\n",  # 개행문자
+        "\u200b",  # Zero Width Space
+        "\u200c",  # Zero Width Non-Joiner
+        "\u200d",  # Zero Width Joiner
+        "\u200e",  # Left-to-Right Mark
+        "\u200f",  # Right-to-Left Mark
+        "\ufeff",  # Zero Width No-Break Space (BOM)
+        "\u2060",  # Word Joiner
+        "\u00a0",  # Non-Breaking Space
+        "\u180e",  # Mongolian Vowel Separator
+        "\u3164",  # Hangul Filler
+    }
+
+    return len([char for char in text if char not in excluded_chars])
 
 
 def count_visible_chars(text: str) -> int:

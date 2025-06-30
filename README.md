@@ -42,7 +42,7 @@ uv run pytest
 ### 실행 파일 빌드
 
 ```bash
-uv run pyinstaller --onefile TextBreaker.spec
+uv run pyinstaller TextBreaker.spec
 ```
 
 ## 사용법

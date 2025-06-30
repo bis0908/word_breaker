@@ -4,7 +4,7 @@
 """
 
 import pytest
-from utils.korean_counter import count_korean, is_korean_char
+from utils.deprecated_korean_counter import count_korean, is_korean_char
 
 
 class TestKoreanCounter:

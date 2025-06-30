@@ -24,7 +24,7 @@ class TestTextCounter:
     def test_count_all_chars_with_punctuation(self):
         """특수문자 포함 테스트"""
         text = "안녕하세요! Hello, World."
-        expected = 18  # 모든 문자 (공백 2개 제외)
+        expected = 15  # 모든 문자 (공백 2개 제외)
         result = count_all_chars(text)
         assert result == expected
 
@@ -45,7 +45,7 @@ class TestTextCounter:
     def test_count_all_chars_no_spaces(self):
         """공백이 없는 문자열 테스트"""
         text = "안녕하세요123ABC!@#"
-        expected = 14  # 모든 문자
+        expected = 13  # 모든 문자 (!,',','.' 제외)
         result = count_all_chars(text)
         assert result == expected
 
@@ -158,7 +158,7 @@ class TestTextCounter:
         korean_chars = count_korean(text)  # 한글만
 
         assert all_chars > korean_chars
-        assert all_chars == 14  # 안녕하세요(5) + Hello(5) + 123(3) + !(1)
+        assert all_chars == 13  # 안녕하세요(5) + Hello(5) + 123(3)
         assert korean_chars == 5  # 안녕하세요(5)
 
     def test_count_visible_chars_vs_count_all_chars_comparison(self):

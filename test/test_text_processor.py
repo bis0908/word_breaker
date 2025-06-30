@@ -98,7 +98,7 @@ class TestTextProcessor:
     def test_count_all_chars_method(self):
         """TextProcessor.count_all_chars 메서드 테스트"""
         text = "안녕 Hello 123!"
-        expected = 11  # 공백 제외 모든 문자
+        expected = 10  # 공백, 쉼표, 마침표 제외 모든 문자
         result = self.processor.count_all_chars(text)
         assert result == expected
 

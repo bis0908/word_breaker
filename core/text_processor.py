@@ -1,5 +1,9 @@
 from typing import List
-from utils.text_counter import count_korean, count_all_chars
+from utils.text_counter import (
+    count_korean,
+    count_all_chars,
+    count_all_chars_with_period,
+)
 import re
 
 
@@ -12,6 +16,7 @@ class TextProcessor:
 
     def format_text(self, text: str, line_length: int = DEFAULT_LINE_LENGTH) -> str:
         """
+        deprecated
         텍스트를 지정된 줄 길이에 맞춰 가다듬습니다.
 
         Args:
@@ -32,6 +37,7 @@ class TextProcessor:
 
     def split_by_korean_count(self, text: str, length: int) -> List[str]:
         """
+        deprecated
         텍스트를 한글 문자 수 기준으로 분할합니다.
 
         Args:
@@ -135,15 +141,18 @@ class TextProcessor:
 
     def count_all_chars(self, text: str) -> int:
         """
-        텍스트의 모든 문자 수를 카운트합니다. (공백 제외)
+        텍스트의 모든 문자 수를 카운트합니다. (공백, 쉼표, 마침표 제외)
 
         Args:
             text (str): 카운트할 텍스트
 
         Returns:
-            int: 모든 문자 수 (공백 제외)
+            int: 모든 문자 수 (공백, 쉼표, 마침표 제외)
         """
         return count_all_chars(text)
+
+    def count_all_chars_with_period(self, text: str) -> int:
+        return count_all_chars_with_period(text)
 
     def format_text_with_options(
         self,
@@ -359,24 +368,47 @@ class TextProcessor:
 
     def separate_sentences_by_period(self, text: str) -> str:
         """
-        마침표 기준 문장 분리 (마침표 뒤에 빈 행 추가)
+        마침표 기준 문장 분리 (마침표 뒤에 빈 행 추가하고 공백 정리)
 
         Args:
             text (str): 분리할 텍스트
 
         Returns:
-            str: 마침표로 분리된 텍스트
+            str: 마침표로 분리되고 공백이 정리된 텍스트
         """
         if not text.strip():
             return ""
 
+        # 보이지 않는 문자들 제거 (Zero-Width Space 등)
+        invisible_chars = [
+            "\u200b",  # Zero Width Space
+            "\u200c",  # Zero Width Non-Joiner
+            "\u200d",  # Zero Width Joiner
+            "\u200e",  # Left-to-Right Mark
+            "\u200f",  # Right-to-Left Mark
+            "\ufeff",  # Zero Width No-Break Space
+            "\u2060",  # Word Joiner
+        ]
+
+        for char in invisible_chars:
+            text = text.replace(char, "")
+
+        # 마침표가 나오기 전까지의 개행을 공백으로 변경
+        # 마침표 앞의 개행들을 공백으로 치환
+        text = re.sub(r"\n+(?=[^.]*\.)", " ", text)
+
+        # 연속된 공백을 하나로 정리
+        text = re.sub(r"\s+", " ", text)
+
         # 마침표 뒤에 공백이나 줄바꿈이 있는 경우 빈 행 추가
-        # 마침표 뒤에 이미 줄바꿈이 있는 경우는 추가 처리하지 않음
         pattern = r"(\.)(\s+)"
         result = re.sub(pattern, r"\1\n\n", text)
 
         # 마침표 뒤에 바로 문자가 오는 경우도 처리
         pattern2 = r"(\.)([^\s\n])"
         result = re.sub(pattern2, r"\1\n\n\2", result)
+
+        # 빈 행 뒤의 앞쪽 공백 제거
+        result = re.sub(r"\n\n\s+", "\n\n", result)
 
         return result

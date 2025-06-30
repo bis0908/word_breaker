@@ -168,7 +168,7 @@ class TextBreakerApp(QDialog):
             )
 
             # 모든 문자 카운팅
-            char_count = self.text_processor.count_all_chars(result)
+            char_count = self.text_processor.count_all_chars_with_period(result)
 
             # 마침표 분리 상태에 따른 성공 메시지 표시
             if self.separate_sentences:
